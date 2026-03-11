@@ -1,3 +1,4 @@
+import gspread
 from fastapi import APIRouter, Depends, HTTPException, Body
 from auth import get_current_user, get_password_hash, verify_password, create_access_token
 from database import db
@@ -29,7 +30,18 @@ def register(user: UserRegister):
         raise HTTPException(status_code=400, detail="Username already exists")
     
     hashed_password = get_password_hash(user.password)
-    next_id = max([r['id'] for r in records], default=0) + 1
+    
+    # Get all IDs to determine next ID and next row index safely
+    # This prevents overwriting existing rows which can happen with append_row
+    all_ids = sheet.col_values(1)
+    # Filter to ensure we have valid data
+    all_ids = [x for x in all_ids if x]
+    
+    numeric_ids = [int(x) for x in all_ids if str(x).isdigit()]
+    next_id = max(numeric_ids, default=0) + 1
+    
+    # Calculate next row index based on actual data length (1-based)
+    next_row_idx = len(all_ids) + 1
     
     new_user = [
         next_id,
@@ -39,7 +51,13 @@ def register(user: UserRegister):
         datetime.datetime.utcnow().isoformat()
     ]
     
-    sheet.append_row(new_user)
+    # Use update_cells to write to specific row instead of append_row
+    cells = []
+    for col_idx, value in enumerate(new_user):
+        cells.append(gspread.Cell(row=next_row_idx, col=col_idx+1, value=value))
+        
+    sheet.update_cells(cells)
+    
     logger.info(f"User registered: {user.username}")
     return {"id": next_id, "username": user.username, "role": "user"}
 
