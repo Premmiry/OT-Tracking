@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+gspread
+oauth2client
+python-dotenv
+pydantic
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+passlib
+bcrypt
+pyjwt

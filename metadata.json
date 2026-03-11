@@ -1,0 +1,5 @@
+{
+  "name": "OT Tracking & Offset System",
+  "description": "A comprehensive system for tracking overtime, attendance, and leave with automated OT offsetting logic.",
+  "requestFramePermissions": []
+}
