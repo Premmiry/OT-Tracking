@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { 
   LayoutDashboard, 
   Zap, 
@@ -27,6 +28,8 @@ export default function Dashboard({ records, settings, offsets, currentDate, set
   // Filter for current month view
   const currentMonthStr = format(currentDate, "yyyy-MM");
   const currentYearStr = format(currentDate, "yyyy");
+  
+  const [selectedRound, setSelectedRound] = useState<number>(0);
   
   // Apply the same OT recalculation logic as ot.tsx
   const recalculateRecord = (r: AttendanceRecord) => {
@@ -72,7 +75,17 @@ export default function Dashboard({ records, settings, offsets, currentDate, set
   const filteredOffsets = offsets.filter(off => {
     if (!off.offset_date) return false;
     // Check if the offset date (when the leave was taken) is in the current month
-    return off.offset_date.startsWith(currentMonthStr);
+    if (!off.offset_date.startsWith(currentMonthStr)) return false;
+    
+    // Round filtering
+    if (selectedRound > 0) {
+      const day = parseInt(off.offset_date.split('-')[2], 10);
+      if (selectedRound === 1 && day > 10) return false;
+      if (selectedRound === 2 && (day < 11 || day > 20)) return false;
+      if (selectedRound === 3 && day < 21) return false;
+    }
+    
+    return true;
   });
 
   // Use summary from backend if available, otherwise fallback to frontend calculation (which might be partial)
@@ -178,11 +191,22 @@ export default function Dashboard({ records, settings, offsets, currentDate, set
 
       {/* Summary Table */}
       <div className="bg-white rounded-[32px] border border-slate-100 card-shadow overflow-hidden">
-        <div className="p-6 border-b border-slate-50">
+        <div className="p-6 border-b border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <TrendingDown className="text-rose-500 w-5 h-5" />
             <h3 className="text-lg font-bold text-slate-800">รายละเอียดการทดเวลา</h3>
           </div>
+          
+          <select
+            value={selectedRound}
+            onChange={(e) => setSelectedRound(Number(e.target.value))}
+            className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none"
+          >
+            <option value={0}>ทั้งหมด (All)</option>
+            <option value={1}>รอบที่ 1 (วันที่ 1-10)</option>
+            <option value={2}>รอบที่ 2 (วันที่ 11-20)</option>
+            <option value={3}>รอบที่ 3 (วันที่ 21-สิ้นเดือน)</option>
+          </select>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
